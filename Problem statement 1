@@ -1,0 +1,136 @@
+In this assignment you need to implement transaction concepts in Hive.
+
+Problem Statement
+--------------------
+Link: 
+https://acadgild.com/blog/transactions
+
+Refer the above given link for transactions in Hive and implement the operations given in the blog using your own sample data set and send us the screenshot.
+
+hive> set hive.support.concurrency = true;
+hive> set hive.enforce.bucketing = true;
+hive> set hive.exec.dynamic.partition.mode = nonstrict;
+hive> set hive.txn.manager = org.apache.hadoop.hive.ql.lockmgr.DbTxnManager;
+hive> set hive.compactor.initiator.on = true;
+hive> set hive.compactor.worker.threads = 5;
+
+RESTART HIVE
+
+hive> ^C[acadgild@localhost ~]$ ^C
+[acadgild@localhost ~]$ hive start
+
+hive> use default;
+OK
+Time taken: 1.068 seconds
+
+CREATING TABLE
+--------------------
+hive> CREATE TABLE college(clg_id int,clg_name string,clg_loc string) clustered by (clg_id) into 5 buckets stored as orc TBLPROPERTIES('transactional'='true');
+OK
+Time taken: 6.831 seconds
+hive> show tables;
+OK
+college
+customer_hive
+first
+Time taken: 0.155 seconds, Fetched: 3 row(s)
+hive>  
+
+LOADING DATA
+
+hive> INSERT INTO table college values(1,'nec','nlr'),(2,'vit','vlr'),(3,'srm','chen'),(4,'lpu','del'),(5,'stanford','uk'),(6,'JNTUA','atp'),(7,'cambridge','us');
+OK
+Time taken: 336.718 seconds
+hive> 
+
+hive>select * from college;
+OK
+5	stanford	uk
+6	JNTUA	atp
+1	nec	nlr
+7	cambridge	us
+2	vit	vlr
+3	srm	chen
+4	lpu	del
+Time taken: 0.553 seconds, Fetched: 7 row(s)
+
+RE INSERTING SAME VALUES
+------------------------
+hive> INSERT INTO table college values(1,'nec','nlr'),(2,'vit','vlr'),(3,'srm','chen'),(4,'lpu','del'),(5,'stanford','uk'),(6,'JNTUA','atp'),(7,'cambridge','us');
+OK
+Time taken: 250.844 seconds
+hive> 
+
+
+hive>select * from college;                                       
+OK
+5	stanford	uk
+5	stanford	uk
+6	JNTUA	atp
+1	nec	nlr
+6	JNTUA	atp
+1	nec	nlr
+7	cambridge	us
+2	vit	vlr
+7	cambridge	us
+2	vit	vlr
+3	srm	chen
+3	srm	chen
+4	lpu	del
+4	lpu	del
+OK
+Time taken: 0.33 seconds, Fetched: 14 row(s)
+
+UPDATING TABLE DATA
+--------------------
+
+hive> UPDATE college set clg_id = 8 where clg_id = 7;
+FAILED: SemanticException[Error 10302]: Updating values of bucketing columns is not supported. Column clg_id
+
+hive>UPDATE college set clg_name = 'IIT' where clg_id = 6;
+OK
+Time taken: 31.33 seconds
+
+                                                                                              
+hive>select * from college;                                       
+OK
+5	stanford	uk
+5	stanford	uk
+6	IIT	atp
+1	nec	nlr
+6	IIT	atp
+1	nec	nlr
+7	cambridge	us
+2	vit	vlr
+7	cambridge	us
+2	vit	vlr
+3	srm	chen
+3	srm	chen
+4	lpu	del
+4	lpu	del
+OK
+Time taken: 0.34 seconds, Fetched: 14 row(s)
+
+
+
+DELETING TABLE DATA
+--------------------
+hive>delete from college where clg_id=5;
+OK
+Time taken: 31.33 seconds
+hive>select * from college;                                       
+OK
+5	stanford	uk
+5	stanford	uk
+6	IIT	atp
+6	IIT	atp
+7	cambridge	us
+2	vit	vlr
+7	cambridge	us
+2	vit	vlr
+3	srm	chen
+3	srm	chen
+4	lpu	del
+4	lpu	del
+OK
+Time taken: 0.34 seconds, Fetched: 12 row(s)
